@@ -1,0 +1,6 @@
+<svg fill="none" viewBox="0 0 64 64" id="okx" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="32" fill="#12100F" />
+        <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M14 14h12v12H14V14Zm12 12h12v12H26V26ZM14 38h12v12H14V38Zm36-24H38v12h12V14Zm0 24H38v12h12V38Z"
+            fill="#fff" />
+    </svg>

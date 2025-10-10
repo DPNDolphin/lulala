@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP按钮图片闪光效果</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        
+        .subtitle {
+            margin-bottom: 40px;
+            color: #a0a0c0;
+        }
+        
+        .vip-button-container {
+            position: relative;
+            display: inline-block;
+            margin: 30px 0;
+        }
+        
+        .vip-button {
+            position: relative;
+            width: 300px;
+            height: 100px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: url('vip.png') center/cover;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .vip-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .vip-button:active {
+            transform: translateY(-2px);
+        }
+        
+        .vip-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+            z-index: 2;
+        }
+        
+        /* 闪光效果1: 水平扫光 */
+        .flash-horizontal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.6),
+                transparent
+            );
+            transition: left 0.7s;
+            z-index: 1;
+        }
+        
+        .flash-horizontal:hover::before {
+            left: 100%;
+        }
+        
+        /* 闪光效果2: 持续扫光 */
+        .flash-continuous::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.6),
+                transparent
+            );
+            animation: continuousFlash 2s infinite;
+            z-index: 1;
+        }
+        
+        @keyframes continuousFlash {
+            0% {
+                left: -100%;
+            }
+            50% {
+                left: 100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* 闪光效果3: 垂直扫光 */
+        .flash-vertical::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                180deg,
+                transparent,
+                rgba(255, 255, 255, 0.6),
+                transparent
+            );
+            transition: top 0.7s;
+            z-index: 1;
+        }
+        
+        .flash-vertical:hover::before {
+            top: 100%;
+        }
+        
+        /* 闪光效果4: 放射光 */
+        .flash-radial::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(
+                circle,
+                rgba(255, 255, 255, 0.8) 0%,
+                transparent 70%
+            );
+            transform: translate(-50%, -50%);
+            transition: all 0.7s;
+            z-index: 1;
+        }
+        
+        .flash-radial:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* 闪光效果5: 边框光 */
+        .flash-border::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: linear-gradient(45deg, #ffcc00, #ff9900, #ff6600, #ffcc00);
+            background-size: 400% 400%;
+            border-radius: 20px;
+            z-index: 0;
+            animation: borderGlow 3s ease infinite;
+        }
+        
+        .flash-border {
+            z-index: 1;
+        }
+        
+        @keyframes borderGlow {
+            0% {
+                background-position: 0% 50%;
+                opacity: 0.7;
+            }
+            50% {
+                background-position: 100% 50%;
+                opacity: 1;
+            }
+            100% {
+                background-position: 0% 50%;
+                opacity: 0.7;
+            }
+        }
+        
+        /* 控制面板 */
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #ffcc00;
+        }
+        
+        .animation-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .animation-option {
+            padding: 8px 15px;
+            background: rgba(255, 204, 0, 0.2);
+            border: 1px solid #ffcc00;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .animation-option:hover {
+            background: rgba(255, 204, 0, 0.4);
+        }
+        
+        .animation-option.active {
+            background: #ffcc00;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        
+        .customize {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .customize h3 {
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+        
+        .customize-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .customize-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .customize-option label {
+            font-size: 14px;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .instructions h3 {
+            color: #ffcc00;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VIP按钮闪光动画效果</h1>
+        <p class="subtitle">基于图片的多种闪光动画实现</p>
+        
+        <div class="vip-button-container">
+            <button class="vip-button flash-horizontal" id="vipButton">
+                <span class="vip-text">VIP会员</span>
+            </button>
+        </div>
+        
+        <div class="controls">
+            <h2>选择动画效果</h2>
+            <div class="animation-options">
+                <div class="animation-option active" data-effect="flash-horizontal">水平扫光</div>
+                <div class="animation-option" data-effect="flash-continuous">持续扫光</div>
+                <div class="animation-option" data-effect="flash-vertical">垂直扫光</div>
+                <div class="animation-option" data-effect="flash-radial">放射光</div>
+                <div class="animation-option" data-effect="flash-border">边框光</div>
+            </div>
+            
+            <div class="customize">
+                <h3>自定义选项</h3>
+                <div class="customize-options">
+                    <div class="customize-option">
+                        <input type="checkbox" id="hoverOnly" checked>
+                        <label for="hoverOnly">仅悬停时显示动画</label>
+                    </div>
+                    <div class="customize-option">
+                        <input type="checkbox" id="addSparkle">
+                        <label for="addSparkle">添加星星闪烁效果</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>选择上方的动画效果可以立即预览不同闪光动画</li>
+                <li>勾选"仅悬停时显示动画"可以控制动画触发方式</li>
+                <li>勾选"添加星星闪烁效果"可以增加额外的点缀效果</li>
+                <li>您可以将此代码集成到您的项目中，只需替换图片URL即可</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const vipButton = document.getElementById('vipButton');
+        const animationOptions = document.querySelectorAll('.animation-option');
+        const hoverOnlyCheckbox = document.getElementById('hoverOnly');
+        const addSparkleCheckbox = document.getElementById('addSparkle');
+        
+        // 切换动画效果
+        animationOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // 移除所有动画类
+                animationOptions.forEach(opt => opt.classList.remove('active'));
+                vipButton.classList.remove(
+                    'flash-horizontal', 
+                    'flash-continuous', 
+                    'flash-vertical', 
+                    'flash-radial',
+                    'flash-border'
+                );
+                
+                // 添加选中的动画类
+                option.classList.add('active');
+                const effect = option.getAttribute('data-effect');
+                vipButton.classList.add(effect);
+                
+                // 根据悬停设置调整
+                toggleHoverOnly();
+            });
+        });
+        
+        // 切换仅悬停动画
+        function toggleHoverOnly() {
+            if (hoverOnlyCheckbox.checked) {
+                // 移除持续动画类，添加悬停动画类
+                if (vipButton.classList.contains('flash-continuous')) {
+                    vipButton.classList.remove('flash-continuous');
+                    vipButton.classList.add('flash-horizontal');
+                    
+                    // 更新激活的选项
+                    animationOptions.forEach(opt => opt.classList.remove('active'));
+                    document.querySelector('[data-effect="flash-horizontal"]').classList.add('active');
+                }
+            }
+        }
+        
+        hoverOnlyCheckbox.addEventListener('change', toggleHoverOnly);
+        
+        // 添加星星闪烁效果
+        addSparkleCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                addSparkleEffect();
+            } else {
+                removeSparkleEffect();
+            }
+        });
+        
+        function addSparkleEffect() {
+            // 创建星星元素
+            for (let i = 0; i < 5; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.cssText = `
+                    position: absolute;
+                    width: 5px;
+                    height: 5px;
+                    background: white;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    opacity: 0;
+                    z-index: 3;
+                `;
+                
+                // 随机位置
+                const posX = Math.random() * 80 + 10;
+                const posY = Math.random() * 60 + 20;
+                sparkle.style.left = `${posX}%`;
+                sparkle.style.top = `${posY}%`;
+                
+                vipButton.appendChild(sparkle);
+                
+                // 星星闪烁动画
+                animateSparkle(sparkle, i * 200);
+            }
+        }
+        
+        function animateSparkle(sparkle, delay) {
+            setTimeout(() => {
+                sparkle.style.transition = 'opacity 0.5s';
+                sparkle.style.opacity = '1';
+                
+                setTimeout(() => {
+                    sparkle.style.opacity = '0';
+                    
+                    // 循环动画
+                    setTimeout(() => {
+                        if (sparkle.parentNode) {
+                            animateSparkle(sparkle, 0);
+                        }
+                    }, 1000);
+                }, 500);
+            }, delay);
+        }
+        
+        function removeSparkleEffect() {
+            const sparkles = document.querySelectorAll('.sparkle');
+            sparkles.forEach(sparkle => {
+                if (sparkle.parentNode) {
+                    sparkle.parentNode.removeChild(sparkle);
+                }
+            });
+        }
+        
+        // 初始化
+        toggleHoverOnly();
+    </script>
+</body>
+</html>
