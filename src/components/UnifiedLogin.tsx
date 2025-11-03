@@ -219,6 +219,11 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
     setShowRegisterModal(true)
   }, [])
 
+  // 关闭邀请码弹窗的回调
+  const handleInviteCodeClose = useCallback(() => {
+    setShowInviteCodeModal(false)
+  }, [])
+
   const handleWalletConnect = useCallback(async (connector?: any, isBinding = false, isRegister = false, retryCount = 0) => {
     // 防止重复连接
     if (isConnecting) {
@@ -226,18 +231,51 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
       return
     }
 
-    // 如果已经连接且有地址（例如cookie丢失后），直接进入签名流程
+    // 如果已经连接且有地址，需要检查钱包是否真正可用（未被锁定）
     if (isConnected && address) {
-      console.log('🔗 已连接且有地址，直接进入签名流程')
-      setIsBindingWallet(isBinding)
-      setShouldAutoSign(true)
-      if (!hasRequestedSignature) {
-        console.log('✅ 触发签名请求（已连接早退分支）')
-        setHasRequestedSignature(true)
-        const message = isRegister ? 'Register LuLaLa' : 'Login LuLaLa'
-        signMessage({ message })
+      console.log('🔗 检测到已连接状态，验证钱包是否可用...')
+      
+      // 检查钱包是否真正可用（未被锁定）
+      const win = window as any
+      let walletLocked = false
+      
+      // 检查 MetaMask 是否被锁定
+      if (win.ethereum?.isMetaMask) {
+        // 如果没有 selectedAddress，说明钱包被锁定了
+        if (!win.ethereum.selectedAddress) {
+          console.log('🔒 检测到钱包已锁定')
+          walletLocked = true
+        }
       }
-      return
+      
+      // 如果钱包被锁定，先断开连接，然后重新连接
+      if (walletLocked) {
+        console.log('🔄 钱包已锁定，断开并重新连接...')
+        disconnect()
+        // 等待断开完成
+        await new Promise(resolve => setTimeout(resolve, 300))
+      } else {
+        // 钱包未被锁定，尝试直接签名
+        console.log('✅ 钱包可用，直接进入签名流程')
+        setIsBindingWallet(isBinding)
+        setIsRegisterMode(isRegister)
+        setShouldAutoSign(true)
+        if (!hasRequestedSignature) {
+          console.log('✅ 触发签名请求（已连接早退分支）')
+          setHasRequestedSignature(true)
+          const message = isRegister ? 'Register LuLaLa' : 'Login LuLaLa'
+          try {
+            await signMessage({ message })
+          } catch (error: any) {
+            console.error('❌ 签名失败，可能钱包被锁定:', error)
+            // 如果签名失败，尝试断开重连
+            disconnect()
+            await new Promise(resolve => setTimeout(resolve, 300))
+            // 继续执行后面的连接逻辑
+          }
+        }
+        return
+      }
     }
 
     setIsConnecting(true)
@@ -304,17 +342,35 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
         type: targetConnector.type
       })
       
-      // 检查MetaMask是否真正可用（仅桌面端）
-      if (!isMobile && targetConnector.name.toLowerCase().includes('metamask')) {
-        const win = window as any
-        const hasMetaMask = !!(win.ethereum?.isMetaMask)
-        console.log('🦊 MetaMask可用性检查:', {
-          hasEthereum: !!win.ethereum,
-          isMetaMask: hasMetaMask,
-          ethereumProviders: win.ethereum?.providers?.length || 0,
-          ethereumSelectedAddress: win.ethereum?.selectedAddress,
-          ethereumChainId: win.ethereum?.chainId
-        })
+        // 检查MetaMask是否真正可用（仅桌面端）
+        if (!isMobile && targetConnector.name.toLowerCase().includes('metamask')) {
+          const win = window as any
+          const hasMetaMask = !!(win.ethereum?.isMetaMask)
+          
+          // 安全地获取 ethereum 属性，避免触发 chainId 错误
+          let ethereumInfo = {}
+          try {
+            ethereumInfo = {
+              hasEthereum: !!win.ethereum,
+              isMetaMask: hasMetaMask,
+              ethereumProviders: win.ethereum?.providers?.length || 0,
+              ethereumSelectedAddress: win.ethereum?.selectedAddress,
+              // 避免直接访问 chainId，使用 try-catch 包装
+              ethereumChainId: (() => {
+                try {
+                  return win.ethereum?.chainId
+                } catch (e: any) {
+                  console.warn('无法访问 ethereum.chainId:', e?.message || '未知错误')
+                  return 'unknown'
+                }
+              })()
+            }
+          } catch (e: any) {
+            console.warn('获取 ethereum 信息时出错:', e?.message || '未知错误')
+            ethereumInfo = { hasEthereum: false, isMetaMask: false }
+          }
+          
+          console.log('🦊 MetaMask可用性检查:', ethereumInfo)
         
         if (!hasMetaMask && !isMobile) {
           console.warn('⚠️ MetaMask未检测到，但connector存在')
@@ -783,7 +839,7 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
         {/* 邀请码输入弹窗 */}
         <InviteCodeModal
           isOpen={showInviteCodeModal}
-          onClose={() => {}} // 不允许直接关闭
+          onClose={handleInviteCodeClose}
           onSuccess={handleInviteCodeSuccess}
         />
       </>
@@ -809,15 +865,8 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
           
           <button
             onClick={() => {
-              // 注册需要先检查邀请码
-              const inviteUid = getInviteCookie()
-              if (!inviteUid) {
-                // 没有邀请码，显示邀请码输入弹窗
-                setShowInviteCodeModal(true)
-              } else {
-                // 有邀请码，直接显示注册弹窗
-                setShowRegisterModal(true)
-              }
+              // 直接显示邀请码输入弹窗
+              setShowInviteCodeModal(true)
             }}
             data-testid="unified-register-btn"
             className={`bg-secondary hover:bg-secondary-light text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -1091,7 +1140,7 @@ export default function UnifiedLogin({ compact = false, initialMode, onClose }: 
       {/* 邀请码输入弹窗 */}
       <InviteCodeModal
         isOpen={showInviteCodeModal}
-        onClose={() => {}} // 不允许直接关闭
+        onClose={handleInviteCodeClose}
         onSuccess={handleInviteCodeSuccess}
       />
       

@@ -65,6 +65,22 @@
     box-shadow: 0 0 20px rgba(237, 90, 143, 0.3);
     border-color: rgb(237, 90, 143);
   }
+
+  /* Markdown 链接样式 */
+  .markdown-content a {
+    color: rgb(236, 72, 153); /* pink-500 */
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .markdown-content a:hover {
+    color: rgb(219, 39, 119); /* pink-600 */
+  }
+  .dark-theme .markdown-content a {
+    color: rgb(244, 114, 182); /* pink-400 in dark */
+  }
+  .dark-theme .markdown-content a:hover {
+    color: rgb(236, 72, 153); /* pink-500 in dark */
+  }
 }
 
 /* 首页 Hero 渐变 - 深浅双主题 */

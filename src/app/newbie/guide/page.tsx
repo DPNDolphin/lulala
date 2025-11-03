@@ -181,8 +181,37 @@ export default function NewbieGuidePage() {
                   href={`/news/${article.id}`}
                   className="bg-background-card rounded-xl overflow-hidden hover-glow hover:scale-105 transition-all group"
                 >
-                  <div className={`h-48 bg-gradient-to-br ${sectionBgColor} relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  <div className="h-48 relative overflow-hidden">
+                    {article.video_url ? (
+                      // 如果有视频，显示视频预览
+                      <div className="w-full h-full">
+                        <iframe
+                          src={article.video_url}
+                          className="w-full h-full object-cover"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={article.title}
+                        ></iframe>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+                      </div>
+                    ) : article.image ? (
+                      // 如果没有视频但有图片，显示图片
+                      <>
+                        <img 
+                          src={article.image} 
+                          alt={article.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                      </>
+                    ) : (
+                      // 既没有视频也没有图片，显示默认背景
+                      <>
+                        <div className={`w-full h-full bg-gradient-to-br ${sectionBgColor}`}></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      </>
+                    )}
                     <div className="absolute top-4 left-4">
                       <span className={`bg-white/90 ${sectionColor} px-3 py-1 rounded-full text-sm font-medium flex items-center`}>
                         <SectionIcon className="h-4 w-4 mr-1" />

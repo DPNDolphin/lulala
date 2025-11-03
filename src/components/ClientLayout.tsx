@@ -16,6 +16,8 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname()
   const isAdminPage = pathname.startsWith('/admin')
+  const isReferralPage = pathname === '/r'
+  const isAlphaPage = pathname === '/a'
 
   // 邀请功能：检查URL参数并设置cookie
   useEffect(() => {
@@ -26,13 +28,24 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     handleInviteFromUrl()
   }, [isAdminPage]) // 依赖isAdminPage，确保管理页面不处理邀请
 
-  // 管理页面使用独立布局，支持多重认证
+  // 管理页面使用独立布局，支持多重认证，但不包含钱包功能
   if (isAdminPage) {
     return (
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    )
+  }
+
+  // 推荐链接与Alpha页面使用全屏布局，不显示侧边栏
+  if (isReferralPage || isAlphaPage) {
+    return (
       <MultiAuthProvider>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <WalletProvider>
+          <div className="min-h-screen">
+            {children}
+          </div>
+        </WalletProvider>
       </MultiAuthProvider>
     )
   }

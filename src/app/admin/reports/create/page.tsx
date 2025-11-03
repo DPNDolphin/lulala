@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import AdminLayout from '@/components/AdminLayout'
 import { 
   Save, 
@@ -23,6 +23,8 @@ const MDEditorMarkdown = dynamic(() => import('@uiw/react-md-editor').then(mod =
 
 export default function CreateReport() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const categoryParam = searchParams?.get('category') || ''
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -59,38 +61,8 @@ export default function CreateReport() {
     }
   }
 
-  // 添加全局粘贴事件监听
-  useEffect(() => {
-    const handleGlobalPaste = async (event: ClipboardEvent) => {
-      // 检查是否在MDEditor区域内
-      const target = event.target as HTMLElement
-      if (!target.closest('.w-md-editor')) {
-        return
-      }
-
-      const items = Array.from(event.clipboardData?.items || [])
-      const imageItems = items.filter(item => item.type.startsWith('image/'))
-      
-      if (imageItems.length > 0) {
-        event.preventDefault()
-        const file = imageItems[0].getAsFile()
-        if (file) {
-          try {
-            const imageUrl = await handleEditorImageUpload(file)
-            // 使用新的插入函数，支持在光标位置插入
-            insertImageAtCursor(imageUrl, '粘贴的图片')
-          } catch (error) {
-            setError(error instanceof Error ? error.message : '图片上传失败')
-          }
-        }
-      }
-    }
-
-    document.addEventListener('paste', handleGlobalPaste)
-    return () => {
-      document.removeEventListener('paste', handleGlobalPaste)
-    }
-  }, [formData.content])
+  // 文件 input 引用，保证选择相同文件也能触发 onChange
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchCommonTags()
@@ -259,8 +231,8 @@ export default function CreateReport() {
       if (data.api_code == 200) {
         setSuccess(true)
         setTimeout(() => {
-          router.push('/admin/content')
-        }, 2000)
+          router.push(`/admin/content${categoryParam ? `?category=${categoryParam}` : ''}`)
+        }, 1000)
       } else {
         setError(data.api_msg || '创建失败')
       }
@@ -542,31 +514,31 @@ export default function CreateReport() {
                     <input
                       type="file"
                       accept="image/*"
+                      ref={fileInputRef}
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
-                        if (file) {
+                        if (!file) return
                         try {
                           const imageUrl = await handleEditorImageUpload(file)
-                          const imageMarkdown = `![${file.name}](${imageUrl})`
-                          const currentContent = formData.content
-                          const newContent = currentContent + '\n' + imageMarkdown
-                          // 使用setTimeout确保状态更新
-                          setTimeout(() => {
-                            handleContentChange(newContent)
-                          }, 100)
-                          // 清空input
-                          e.target.value = ''
+                          // 在光标位置插入，避免光标跳动
+                          insertImageAtCursor(imageUrl, file.name)
                         } catch (error) {
                           setError(error instanceof Error ? error.message : '图片上传失败')
-                        }
+                        } finally {
+                          // 重置 input，允许重复选择同一文件
+                          e.currentTarget.value = ''
                         }
                       }}
                       className="hidden"
-                      id="editor-image-upload"
+                      id="report-editor-image-upload-create"
                     />
                     <label
-                      htmlFor="editor-image-upload"
+                      htmlFor="report-editor-image-upload-create"
                       className="inline-flex items-center px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded cursor-pointer transition-colors"
+                      onClick={() => {
+                        // 确保每次点击前都重置，兼容选择相同文件
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -591,13 +563,8 @@ export default function CreateReport() {
                         const file = imageFiles[0]
                         try {
                           const imageUrl = await handleEditorImageUpload(file)
-                          const imageMarkdown = `![${file.name}](${imageUrl})`
-                          const currentContent = formData.content
-                          const newContent = currentContent + '\n' + imageMarkdown
-                          // 使用setTimeout确保状态更新
-                          setTimeout(() => {
-                            handleContentChange(newContent)
-                          }, 100)
+                          // 在光标位置插入
+                          insertImageAtCursor(imageUrl, file.name)
                         } catch (error) {
                           setError(error instanceof Error ? error.message : '图片上传失败')
                         }

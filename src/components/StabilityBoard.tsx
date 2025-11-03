@@ -60,9 +60,10 @@ export default function StabilityBoard({ className = '' }: StabilityBoardProps) 
   }
 
   const getStatusText = (status: string) => {
-    if (status.includes('stable')) return '稳定'
-    if (status.includes('moderate')) return '中等'
+    // 注意顺序：'unstable' 包含 'stable'，需先判断不稳定
     if (status.includes('unstable')) return '不稳定'
+    if (status.includes('moderate')) return '中等'
+    if (status.includes('stable')) return '稳定'
     return status
   }
 

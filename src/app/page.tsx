@@ -262,9 +262,22 @@ export default function HomePage() {
                     <div className="bg-pink-400/10 p-3 rounded-lg w-fit mb-4 group-hover:bg-pink-400/20 transition-all">
                       <section.icon className="h-8 w-8 text-pink-400" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-3 text-text-primary group-hover:text-pink-400 transition-colors">
-                      {section.title}
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xl font-semibold text-text-primary group-hover:text-pink-400 transition-colors">
+                        {section.title}
+                      </h3>
+                      {section.title === "交易所" && (
+                        <a
+                          href="/r"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors underline hover:no-underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          全网交易所下载/注册
+                        </a>
+                      )}
+                    </div>
                     <p className="text-text-muted leading-relaxed mb-4">
                       {section.description}
                     </p>

@@ -48,14 +48,19 @@ export default function D3HeatMap({ timeFrame = '7d', onAirdropSelect }: D3HeatM
         const containerWidth = containerRef.current.offsetWidth
         const containerHeight = containerRef.current.offsetHeight
         const width = Math.min(containerWidth, 1200) // 最大1200px
-        // 使用容器高度的85%，减去控制栏高度，确保充分利用空间
-        const controlsHeight = 80 // 控制栏大约高度
+        
+        // 计算控制栏的实际高度
+        const controlsHeight = 120 // 控制栏的预估高度（包含间距）
         const availableHeight = containerHeight - controlsHeight
-        const height = Math.max(
-          availableHeight * 0.9, 
-          width * 0.6, 
-          400
-        )
+        
+        // 确保高度不超过可用空间，同时设置合理的最小值和理想比例
+        const idealHeight = width * 0.6 // 理想的宽高比
+        const minHeight = 400 // 最小高度
+        const maxHeight = Math.max(availableHeight, minHeight) // 不超过可用高度
+        
+        // 取理想高度和最大高度中的较小值，但不小于最小高度
+        const height = Math.min(Math.max(idealHeight, minHeight), maxHeight)
+        
         setDimensions({ width, height })
       }
     }
@@ -162,8 +167,8 @@ export default function D3HeatMap({ timeFrame = '7d', onAirdropSelect }: D3HeatM
   ]
 
   const projectTypes = [
-    { value: 'normal', label: '普通项目' },
-    { value: 'vip', label: 'VIP项目' }
+    { value: 'normal', label: '项目优选' },
+    { value: 'vip', label: 'VIP专区' }
   ]
 
   // 检查用户是否有VIP权限
@@ -181,11 +186,11 @@ export default function D3HeatMap({ timeFrame = '7d', onAirdropSelect }: D3HeatM
   const filteredProjects = projects.filter(project => {
     switch (selectedProjectType) {
       case 'normal':
-        return project.is_vip === 0
+        return project.is_vip == 0
       case 'vip':
-        return project.is_vip === 1
+        return project.is_vip == 1
       default:
-        return project.is_vip === 0 // 默认显示普通项目
+        return project.is_vip == 0 // 默认显示普通项目
     }
   })
 
@@ -320,7 +325,7 @@ export default function D3HeatMap({ timeFrame = '7d', onAirdropSelect }: D3HeatM
         const project = (d as any).data
         
         // 检查VIP权限 - 未登录用户或非VIP用户无法点击VIP项目
-        if (project.is_vip === 1 && !canViewVipProjects()) {
+        if (project.is_vip == 1 && !canViewVipProjects()) {
           if (!isAuthenticated) {
             showError('请先登录', '您需要登录后才能查看VIP项目')
           } else {
@@ -576,7 +581,7 @@ export default function D3HeatMap({ timeFrame = '7d', onAirdropSelect }: D3HeatM
       </div>
 
       {/* D3 Treemap */}
-      <div className="w-full flex-1 flex justify-center items-center">
+      <div className="w-full flex-1 flex justify-center items-center overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center w-full" style={{ height: `${dimensions.height}px` }}>
             <div className="text-center">

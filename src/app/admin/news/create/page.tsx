@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminLayout from '@/components/AdminLayout'
 import { 
@@ -43,6 +43,7 @@ export default function CreateNews() {
   const [previewMode, setPreviewMode] = useState(false)
   const [categories, setCategories] = useState<NewsCategory[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -52,6 +53,7 @@ export default function CreateNews() {
     category_type: 'news' as 'news' | 'newbie',
     section: '' as '' | 'guide' | 'toolkit' | 'exchanges',
     image: '',
+    video_url: '',
     author: 'LULALA团队',
     read_time: '3分钟',
     featured: false,
@@ -117,6 +119,42 @@ export default function CreateNews() {
       ...prev,
       content: value || ''
     }))
+  }
+
+  // 在光标位置插入图片
+  const insertImageAtCursor = (imageUrl: string, altText: string = '粘贴的图片') => {
+    const imageMarkdown = `![${altText}](${imageUrl})`
+    let textarea: HTMLTextAreaElement | null = null
+    let start = 0
+    let end = 0
+    textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement
+    if (!textarea) textarea = document.querySelector('.w-md-editor .w-md-editor-text-input') as HTMLTextAreaElement
+    if (!textarea) textarea = document.querySelector('.w-md-editor textarea') as HTMLTextAreaElement
+    if (!textarea) {
+      textarea = document.activeElement as HTMLTextAreaElement
+      if (!textarea || textarea.tagName !== 'TEXTAREA') textarea = null
+    }
+    const currentContent = formData.content
+    if (textarea && textarea.selectionStart !== undefined && textarea.selectionEnd !== undefined) {
+      start = textarea.selectionStart
+      end = textarea.selectionEnd
+      const beforeCursor = currentContent.substring(0, start)
+      const afterCursor = currentContent.substring(end)
+      const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n')
+      const needsNewlineAfter = afterCursor.length > 0 && !afterCursor.startsWith('\n')
+      const newContent = beforeCursor + (needsNewlineBefore ? '\n' : '') + imageMarkdown + (needsNewlineAfter ? '\n' : '') + afterCursor
+      handleContentChange(newContent)
+      setTimeout(() => {
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + imageMarkdown.length + (needsNewlineAfter ? 1 : 0)
+        if (textarea) {
+          textarea.setSelectionRange(newCursorPos, newCursorPos)
+          textarea.focus()
+        }
+      }, 100)
+    } else {
+      const newContent = currentContent + '\n' + imageMarkdown
+      handleContentChange(newContent)
+    }
   }
 
   const handleImageUpload = (imageUrl: string) => {
@@ -276,6 +314,25 @@ export default function CreateNews() {
                     currentImage={formData.image}
                     className="w-full max-w-sm"
                   />
+                  <p className="text-xs text-gray-500 mt-1">如果有视频，图片将被视频替代</p>
+                </div>
+
+                {/* Video URL */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    视频地址（选填）
+                  </label>
+                  <input
+                    type="url"
+                    name="video_url"
+                    value={formData.video_url}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
+                    placeholder="请输入视频嵌入地址，如YouTube或Bilibili的embed链接"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    示例：https://www.youtube.com/embed/VIDEO_ID 或 https://player.bilibili.com/player.html?bvid=BV_ID
+                  </p>
                 </div>
 
                 {/* Category Type */}
@@ -435,27 +492,28 @@ export default function CreateNews() {
                     <input
                       type="file"
                       accept="image/*"
+                      ref={fileInputRef}
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
-                        if (file) {
-                          try {
-                            const imageUrl = await handleEditorImageUpload(file)
-                            const imageMarkdown = `![${file.name}](${imageUrl})`
-                            const currentContent = formData.content
-                            const newContent = currentContent + '\n' + imageMarkdown
-                            handleContentChange(newContent)
-                            e.target.value = ''
-                          } catch (error) {
-                            setError(error instanceof Error ? error.message : '图片上传失败')
-                          }
+                        if (!file) return
+                        try {
+                          const imageUrl = await handleEditorImageUpload(file)
+                          insertImageAtCursor(imageUrl, file.name)
+                        } catch (error) {
+                          setError(error instanceof Error ? error.message : '图片上传失败')
+                        } finally {
+                          e.currentTarget.value = ''
                         }
                       }}
                       className="hidden"
-                      id="editor-image-upload"
+                      id="news-editor-image-upload-create"
                     />
                     <label
-                      htmlFor="editor-image-upload"
+                      htmlFor="news-editor-image-upload-create"
                       className="inline-flex items-center px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded cursor-pointer transition-colors"
+                      onClick={() => {
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -480,10 +538,7 @@ export default function CreateNews() {
                         const file = imageFiles[0]
                         try {
                           const imageUrl = await handleEditorImageUpload(file)
-                          const imageMarkdown = `![${file.name}](${imageUrl})`
-                          const currentContent = formData.content
-                          const newContent = currentContent + '\n' + imageMarkdown
-                          handleContentChange(newContent)
+                          insertImageAtCursor(imageUrl, file.name)
                         } catch (error) {
                           setError(error instanceof Error ? error.message : '图片上传失败')
                         }
@@ -499,10 +554,7 @@ export default function CreateNews() {
                         if (file) {
                           try {
                             const imageUrl = await handleEditorImageUpload(file)
-                            const imageMarkdown = `![粘贴的图片](${imageUrl})`
-                            const currentContent = formData.content
-                            const newContent = currentContent + '\n' + imageMarkdown
-                            handleContentChange(newContent)
+                            insertImageAtCursor(imageUrl, '粘贴的图片')
                           } catch (error) {
                             setError(error instanceof Error ? error.message : '图片上传失败')
                           }

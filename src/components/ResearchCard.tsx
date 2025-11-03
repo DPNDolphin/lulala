@@ -21,9 +21,10 @@ interface ResearchCardProps {
   }
   onViewDetails: (reportId: number) => void
   onFavoriteChange?: (reportId: number, isFavorited: boolean) => void
+  isNew?: boolean
 }
 
-export default function ResearchCard({ report, onViewDetails, onFavoriteChange }: ResearchCardProps) {
+export default function ResearchCard({ report, onViewDetails, onFavoriteChange, isNew }: ResearchCardProps) {
   const [isClient, setIsClient] = useState(false)
   const [isFavorited, setIsFavorited] = useState(report.isFavorited || false)
   const [isLoading, setIsLoading] = useState(false)
@@ -86,6 +87,11 @@ export default function ResearchCard({ report, onViewDetails, onFavoriteChange }
       }`}
       onClick={handleCardClick}
     >
+      {isNew && (
+        <div className="absolute top-2 right-2 z-20">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-md">NEW</span>
+        </div>
+      )}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-2">
           {isVipContent && (

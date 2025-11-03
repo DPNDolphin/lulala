@@ -8,6 +8,7 @@ interface NewsCardProps {
     excerpt: string
     category: string
     image?: string
+    video_url?: string
     readTime: string
     views: number
     publishedAt: string
@@ -24,7 +25,21 @@ export default function NewsCard({ news }: NewsCardProps) {
   return (
     <article className="bg-background-card rounded-xl overflow-hidden hover-glow hover:scale-105 transition-all group">
       <div className="h-48 relative overflow-hidden">
-        {news.image ? (
+        {news.video_url ? (
+          // 如果有视频，显示视频预览
+          <div className="w-full h-full">
+            <iframe
+              src={news.video_url}
+              className="w-full h-full object-cover"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={news.title}
+            ></iframe>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+          </div>
+        ) : news.image ? (
+          // 如果没有视频但有图片，显示图片
           <>
             <img 
               src={news.image} 
@@ -43,12 +58,13 @@ export default function NewsCard({ news }: NewsCardProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
           </>
         ) : (
+          // 既没有视频也没有图片，显示默认背景
           <>
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </>
         )}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-10">
           <span className="bg-primary/90 text-white px-3 py-1 rounded-full text-sm font-medium">
             {news.category}
           </span>

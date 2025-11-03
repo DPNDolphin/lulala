@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import AdminLayout from '@/components/AdminLayout'
 import { 
   Save, 
@@ -25,7 +25,9 @@ const MDEditorMarkdown = dynamic(() => import('@uiw/react-md-editor').then(mod =
 export default function EditReport() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const reportId = params.id as string
+  const categoryParam = searchParams?.get('category') || ''
   
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -48,6 +50,7 @@ export default function EditReport() {
   })
 
   const [newTag, setNewTag] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 获取报告详情
   const fetchReportDetail = async () => {
@@ -298,8 +301,8 @@ export default function EditReport() {
       if (data.api_code == 200) {
         setSuccess(true)
         setTimeout(() => {
-          router.push('/admin/content')
-        }, 2000)
+          router.push(`/admin/content${categoryParam ? `?category=${categoryParam}` : ''}`)
+        }, 1000)
       } else {
         setError(data.api_msg || '更新失败')
       }
@@ -606,31 +609,31 @@ export default function EditReport() {
                     <input
                       type="file"
                       accept="image/*"
+                      ref={fileInputRef}
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
                         if (file) {
                           try {
                             const imageUrl = await handleEditorImageUpload(file)
-                            const imageMarkdown = `![${file.name}](${imageUrl})`
-                            const currentContent = formData.content
-                            const newContent = currentContent + '\n' + imageMarkdown
-                            // 使用setTimeout确保状态更新
-                            setTimeout(() => {
-                              handleContentChange(newContent)
-                            }, 100)
-                            // 清空input
-                            e.target.value = ''
+                            // 在光标处插入，避免光标错位
+                            insertImageAtCursor(imageUrl, file.name)
+                            // 清空 input，允许选择同一文件再次触发
+                            e.currentTarget.value = ''
                           } catch (error) {
                             setError(error instanceof Error ? error.message : '图片上传失败')
                           }
                         }
                       }}
                       className="hidden"
-                      id="editor-image-upload"
+                      id="report-editor-image-upload-edit"
                     />
                     <label
-                      htmlFor="editor-image-upload"
+                      htmlFor="report-editor-image-upload-edit"
                       className="inline-flex items-center px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded cursor-pointer transition-colors"
+                      onClick={() => {
+                        // 确保每次点击前都重置，兼容选择相同文件
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

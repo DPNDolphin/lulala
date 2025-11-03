@@ -29,7 +29,8 @@ import {
   LogOut,
   Copy,
   Check,
-  TrendingUp
+  TrendingUp,
+  Link as LinkIcon
 } from 'lucide-react'
 import { XIcon, TelegramIcon, DiscordIcon } from '@/components/CustomIcons'
 
@@ -50,11 +51,20 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   
   // 用户积分
   const [userPoints, setUserPoints] = useState<number>(0)
+  // 控制“交易所空投专区”子菜单展开
+  const [alphaOpen, setAlphaOpen] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
     setIsMobile(window.innerWidth < 768)
   }, [])
+
+  // 当处于 /alpha、/binance_booster 或 /okx_boost 时默认展开
+  useEffect(() => {
+    if (pathname.startsWith('/alpha') || pathname.startsWith('/binance_booster') || pathname.startsWith('/okx_boost')) {
+      setAlphaOpen(true)
+    }
+  }, [pathname])
 
   // 保存用户资料
   const saveUserProfile = async (profile: { nickname: string; avatar: string }) => {
@@ -115,9 +125,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     { href: '/', label: '首页', icon: Home },
     { href: '/airdrops', label: '空投大厅', icon: Gift },
     { href: '/research', label: '投研报告', icon: FileText },
-    { href: '/alpha', label: '币安Alpha任务专区', icon: Rocket, isSpecial: true },
+    { href: '/alpha', label: '交易所空投专区', icon: Rocket, isSpecial: true },
     { href: '/rumors', label: '小道消息', icon: MessageSquare },
     { href: '/trading', label: '合约/现货策略', icon: TrendingUp, isTrading: true },
+    //{ href: '/referral', label: '推荐链接', icon: LinkIcon },
     { href: '/news', label: '行业资讯', icon: Newspaper },
     { href: '/subscription', label: '会员订阅', icon: Crown },
   ]
@@ -179,7 +190,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </button>
           </div>
 
-          {/* Navigation - 与PC版一致 */}
+          {/* Navigation - 与PC版一致（含“交易所空投专区”下拉） */}
           <nav className="flex-1 p-3">
             <div className="space-y-1">
               {navigationItems.map((item) => {
@@ -188,6 +199,64 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 const isSpecial = item.isSpecial
                 const isTrading = item.isTrading
                 
+                // 为“交易所空投专区”提供子菜单（与PC一致）
+                if (item.href === '/alpha') {
+                  const isParentActive = pathname.startsWith('/alpha') || pathname.startsWith('/binance_booster') || pathname.startsWith('/okx_boost')
+                  return (
+                    <div key={item.href} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => setAlphaOpen((v) => !v)}
+                        className={`
+                          w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-all group relative text-sm
+                          ${isSpecial
+                            ? isParentActive
+                              ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 border border-pink-400/30'
+                              : 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-300 hover:text-pink-400 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20 border border-pink-400/20 hover:border-pink-400/30'
+                            : isParentActive
+                              ? 'bg-primary/20 text-primary border border-primary/30'
+                              : 'text-text-secondary hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20'
+                          }
+                        `}
+                        aria-expanded={alphaOpen}
+                      >
+                        <Icon className={`${isSpecial ? (isParentActive ? 'text-pink-400' : 'text-pink-300 group-hover:text-pink-400') : (isParentActive ? 'text-primary' : 'text-text-muted group-hover:text-primary')} h-4 w-4 flex-shrink-0`} />
+                        <span className="font-medium truncate">{item.label}</span>
+                        <div className="ml-auto bg-gradient-to-r from-pink-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold flex-shrink-0">
+                          VIP
+                        </div>
+                        <svg className={`ml-2 h-3 w-3 transition-transform duration-300 ${alphaOpen ? 'rotate-90' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M6 6l6 4-6 4V6z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+
+                      <div className={`pl-8 space-y-1 overflow-hidden transform transition-all duration-300 ${alphaOpen ? 'opacity-100 max-h-40 translate-y-0' : 'opacity-0 max-h-0 -translate-y-2'}`}>
+                        <Link
+                          href="/alpha"
+                          onClick={onClose}
+                          className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors border ${pathname.startsWith('/alpha') ? 'text-pink-400 bg-pink-500/10 border-pink-400/30' : 'text-text-secondary hover:text-pink-400 hover:bg-pink-500/10 border-transparent hover:border-pink-400/20'}`}
+                        >
+                          <span>币安Alpha</span>
+                        </Link>
+                        <Link
+                          href="/binance_booster"
+                          onClick={onClose}
+                          className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors border ${pathname.startsWith('/binance_booster') ? 'text-pink-400 bg-pink-500/10 border-pink-400/30' : 'text-text-secondary hover:text-pink-400 hover:bg-pink-500/10 border-transparent hover:border-pink-400/20'}`}
+                        >
+                          <span>币安Booster教程</span>
+                        </Link>
+                        <Link
+                          href="/okx_boost"
+                          onClick={onClose}
+                          className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors border ${pathname.startsWith('/okx_boost') ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400/30' : 'text-text-secondary hover:text-cyan-400 hover:bg-cyan-500/10 border-transparent hover:border-cyan-400/20'}`}
+                        >
+                          <span>OKX Boost</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <Link
                     key={item.href}
@@ -373,7 +442,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     className="border border-gray-700 hover:border-pink-400 text-text-secondary hover:text-pink-400 py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-1 text-xs"
                   >
                     <User className="h-3 w-3" />
-                    <span>个人中心</span>
+                    <span>数据看板</span>
                   </Link>
                   <Link
                     href="/tasks"
@@ -381,7 +450,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     className="border border-amber-600 hover:border-amber-500 text-amber-400 hover:text-amber-300 py-1.5 px-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-1 text-xs bg-amber-900/20 hover:bg-amber-900/30"
                   >
                     <Coins className="h-3 w-3" />
-                    <span className="truncate">{isClient ? userPoints.toLocaleString() : '---'}</span>
+                    <span className="truncate">{isClient ? userPoints.toLocaleString() + '(beat)' : '---'}</span>
                   </Link>
                 </div>
               )}
@@ -394,6 +463,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <div className="flex space-x-1">
               {socialLinks.map((social, index) => (
                 <a
+                  target='_blank'
                   key={index}
                   href={social.href}
                   className="p-1.5 rounded-lg bg-background-card hover:bg-primary/20 transition-colors group flex-1 flex items-center justify-center"

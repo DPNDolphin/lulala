@@ -11,20 +11,20 @@ import {
   X,
   Share2,
   Star,
-  TrendingUp,
   Globe,
   Twitter,
   Linkedin,
   FileText
 } from 'lucide-react'
 import { airdropsAPI, type AirdropDetail, type AirdropComment } from '@/lib/airdropsAPI'
-import HeatTrendChart from '@/components/HeatTrendChart'
 import { useMultiAuth } from '@/contexts/MultiAuthContext'
 import { useToast } from '@/components/Toast'
 import CommentSection, { type Comment } from '@/components/CommentSection'
 import { publicAPI, userProfileAPI } from '@/lib/publicAPI'
 import UserProfileModal from '@/components/UserProfileModal'
 import ParticleAnimation from '@/components/ParticleAnimation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export default function AirdropsPage() {
   const { isAuthenticated, user, loading: authLoading, refreshAuth } = useMultiAuth()
@@ -397,12 +397,12 @@ export default function AirdropsPage() {
                     <h2 className="text-2xl md:text-3xl font-bold text-text-primary">
                       {selectedAirdrop.name}
                     </h2>
-                    {selectedAirdrop.is_vip === 1 && (
+                    {selectedAirdrop.is_vip == 1 && (
                       <span className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm font-semibold rounded-full">
                         VIP
                       </span>
                     )}
-                    {selectedAirdrop.featured === 1 && (
+                    {selectedAirdrop.featured == 1 && (
                       <span className="px-3 py-1 bg-pink-500 text-white text-sm font-semibold rounded-full">
                         推荐
                       </span>
@@ -466,24 +466,86 @@ export default function AirdropsPage() {
 
               
 
-              {/* 热度趋势图 */}
-              <div className="bg-background-primary rounded-xl p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-semibold text-text-primary">热度趋势</h3>
+              {/* 视频区域 */}
+              {selectedAirdrop.video_url && (
+                <div className="bg-background-primary rounded-xl p-6 mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h3 className="text-xl font-semibold text-text-primary">项目视频</h3>
+                  </div>
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      src={selectedAirdrop.video_url}
+                      className="absolute top-0 left-0 w-full h-full rounded-lg"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
                 </div>
-                <HeatTrendChart airdropId={selectedAirdrop.id} days={30} height={300} />
-              </div>
+              )}
 
               {/* 项目介绍 */}
               {selectedAirdrop.content && (
                 <div className="bg-background-primary rounded-xl p-6 mb-6">
-                  <div 
-                    className="prose prose-invert max-w-none text-text-primary mb-6"
-                    dangerouslySetInnerHTML={{ 
-                      __html: selectedAirdrop.content.replace(/\n/g, '<br>') 
-                    }}
-                  />
+                  <div className="prose prose-invert max-w-none text-text-primary mb-6">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" />
+                        ),
+                        h1: ({ node, ...props }) => (
+                          <h1 {...props} className="text-2xl font-bold mb-4 text-text-primary" />
+                        ),
+                        h2: ({ node, ...props }) => (
+                          <h2 {...props} className="text-xl font-bold mb-3 text-text-primary" />
+                        ),
+                        h3: ({ node, ...props }) => (
+                          <h3 {...props} className="text-lg font-bold mb-2 text-text-primary" />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p {...props} className="mb-4 text-text-secondary leading-relaxed" />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul {...props} className="list-disc list-inside mb-4 text-text-secondary space-y-2" />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol {...props} className="list-decimal list-inside mb-4 text-text-secondary space-y-2" />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li {...props} className="ml-4" />
+                        ),
+                        code: ({ node, inline, ...props }: any) => 
+                          inline ? (
+                            <code {...props} className="bg-gray-700 text-primary px-1.5 py-0.5 rounded text-sm" />
+                          ) : (
+                            <code {...props} className="block bg-gray-700 text-text-primary p-4 rounded-lg mb-4 overflow-x-auto" />
+                          ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote {...props} className="border-l-4 border-primary pl-4 italic text-text-muted mb-4" />
+                        ),
+                        img: ({ node, ...props }) => (
+                          <img {...props} className="rounded-lg max-w-full h-auto my-4" />
+                        ),
+                        table: ({ node, ...props }) => (
+                          <div className="overflow-x-auto mb-4">
+                            <table {...props} className="min-w-full border border-gray-700" />
+                          </div>
+                        ),
+                        thead: ({ node, ...props }) => (
+                          <thead {...props} className="bg-gray-700" />
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th {...props} className="border border-gray-600 px-4 py-2 text-left text-text-primary" />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td {...props} className="border border-gray-700 px-4 py-2 text-text-secondary" />
+                        ),
+                      }}
+                    >
+                      {selectedAirdrop.content}
+                    </ReactMarkdown>
+                  </div>
                   {/* 标签 */}
                   {selectedAirdrop.tags && selectedAirdrop.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2">

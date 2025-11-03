@@ -145,7 +145,7 @@ export default function ResearchDetailModal({
             </div>
           )}
 
-          <div className="prose prose-invert max-w-none mb-8 text-text-primary leading-relaxed">
+          <div className="markdown-content prose prose-invert max-w-none mb-8 text-text-primary leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {report.content}
             </ReactMarkdown>

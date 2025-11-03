@@ -14,6 +14,7 @@ export interface AirdropProject {
   tags: string[]
   description: string
   content: string
+  video_url: string
   status: 'draft' | 'published' | 'archived'
   featured: number
   is_vip: number

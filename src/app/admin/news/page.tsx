@@ -28,7 +28,10 @@ interface NewsArticle {
   title: string
   excerpt: string
   category: string
+  category_type: 'news' | 'newbie'
+  section?: 'guide' | 'toolkit' | 'exchanges'
   image: string
+  video_url?: string
   author: string
   read_time: string
   views: number
@@ -39,7 +42,19 @@ interface NewsArticle {
   created_at: string
 }
 
-const categories = ['全部', '重大新闻', '技术发展', '监管政策', '融资动态', '市场动态', '机构动态']
+interface NewsCategory {
+  id: number
+  name: string
+  description: string
+  sort_order: number
+  status: 'active' | 'inactive'
+  article_count: number
+  created_at: string
+  updated_at: string
+  category_type?: 'news' | 'newbie'
+  section?: 'guide' | 'toolkit' | 'exchanges'
+}
+
 const statuses = ['全部', 'published', 'draft', 'archived']
 
 export default function NewsManagement() {
@@ -48,8 +63,14 @@ export default function NewsManagement() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
+  // 分类数据
+  const [categories, setCategories] = useState<NewsCategory[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+  
   // 筛选和搜索
   const [search, setSearch] = useState('')
+  const [categoryType, setCategoryType] = useState<'all' | 'news' | 'newbie'>('all')
+  const [section, setSection] = useState<'all' | 'guide' | 'toolkit' | 'exchanges'>('all')
   const [category, setCategory] = useState('全部')
   const [status, setStatus] = useState('全部')
   const [page, setPage] = useState(1)
@@ -66,6 +87,22 @@ export default function NewsManagement() {
     article: null,
     loading: false
   })
+
+  // 获取分类列表
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true)
+      const data = await adminAPI.get('/v1/news/categories?operation=list')
+      
+      if (data.api_code == 200) {
+        setCategories(data.data.categories)
+      }
+    } catch (err) {
+      console.error('获取分类列表失败:', err)
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
 
   const fetchArticles = async () => {
     try {
@@ -95,8 +132,17 @@ export default function NewsManagement() {
   }
 
   useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
     fetchArticles()
   }, [page, search, category, status])
+
+  // 当分类类型或板块变化时，重置分类选择
+  useEffect(() => {
+    setCategory('全部')
+  }, [categoryType, section])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,6 +174,34 @@ export default function NewsManagement() {
       default:
         return status
     }
+  }
+
+  const getCategoryTypeText = (type: 'news' | 'newbie') => {
+    return type === 'news' ? '资讯' : '新手村'
+  }
+
+  const getSectionText = (section?: string) => {
+    switch (section) {
+      case 'guide':
+        return '新手指南'
+      case 'toolkit':
+        return '工具包'
+      case 'exchanges':
+        return '交易所'
+      default:
+        return ''
+    }
+  }
+
+  // 获取过滤后的分类列表
+  const getFilteredCategories = () => {
+    if (categoryType === 'all') return categories
+    if (categoryType === 'newbie' && section !== 'all') {
+      return categories.filter(cat => 
+        cat.category_type === 'newbie' && cat.section === section
+      )
+    }
+    return categories.filter(cat => cat.category_type === categoryType)
   }
 
   // 删除新闻
@@ -203,7 +277,76 @@ export default function NewsManagement() {
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSearch} className="space-y-4">
+            {/* 第一行：分类类型和板块 */}
             <div className="flex flex-col md:flex-row gap-4">
+              {/* Category Type Filter */}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">分类类型</label>
+                <select
+                  value={categoryType}
+                  onChange={(e) => setCategoryType(e.target.value as 'all' | 'news' | 'newbie')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
+                >
+                  <option value="all">全部</option>
+                  <option value="news">新闻资讯</option>
+                  <option value="newbie">新手村</option>
+                </select>
+              </div>
+
+              {/* Section Filter (只在新手村时显示) */}
+              {categoryType === 'newbie' && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">新手村板块</label>
+                  <select
+                    value={section}
+                    onChange={(e) => setSection(e.target.value as 'all' | 'guide' | 'toolkit' | 'exchanges')}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
+                  >
+                    <option value="all">全部板块</option>
+                    <option value="guide">新手指南</option>
+                    <option value="toolkit">工具包</option>
+                    <option value="exchanges">交易所</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">具体分类</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={categoriesLoading}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none disabled:bg-gray-100"
+                >
+                  <option value="全部">全部分类</option>
+                  {getFilteredCategories().map(cat => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">状态</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
+                >
+                  {statuses.map(stat => (
+                    <option key={stat} value={stat}>
+                      {stat === '全部' ? '全部状态' : getStatusText(stat)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 第二行：搜索和筛选按钮 */}
+            <div className="flex gap-4">
               {/* Search */}
               <div className="flex-1">
                 <div className="relative">
@@ -216,36 +359,6 @@ export default function NewsManagement() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
                   />
                 </div>
-              </div>
-
-              {/* Category Filter */}
-              <div>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>
-                      {cat === '全部' ? '全部分类' : cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Status Filter */}
-              <div>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none"
-                >
-                  {statuses.map(stat => (
-                    <option key={stat} value={stat}>
-                      {stat === '全部' ? '全部状态' : getStatusText(stat)}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <button
@@ -284,6 +397,9 @@ export default function NewsManagement() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       新闻标题
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      类型/板块
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       分类
@@ -337,6 +453,24 @@ export default function NewsManagement() {
                               <span className="text-xs text-gray-500">{article.author}</span>
                             </div>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <span className={`inline-flex px-2 py-1 text-xs rounded ${
+                            article.category_type === 'news' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-pink-100 text-pink-800'
+                          }`}>
+                            {getCategoryTypeText(article.category_type)}
+                          </span>
+                          {article.section && (
+                            <div>
+                              <span className="inline-flex px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">
+                                {getSectionText(article.section)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -413,7 +547,7 @@ export default function NewsManagement() {
               <button
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 上一页
               </button>
@@ -426,7 +560,7 @@ export default function NewsManagement() {
                     className={`px-3 py-1 text-sm border rounded ${
                       page === pageNum 
                         ? 'bg-pink-500 text-white border-pink-500' 
-                        : 'border-gray-300 hover:bg-gray-50'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
                     {pageNum}
@@ -436,7 +570,7 @@ export default function NewsManagement() {
               <button
                 onClick={() => setPage(Math.min(pages, page + 1))}
                 disabled={page === pages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 下一页
               </button>

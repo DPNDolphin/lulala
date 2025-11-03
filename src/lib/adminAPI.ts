@@ -33,6 +33,19 @@ class AdminAPI {
     return this.post('/v1/airdrops/delete', { id })
   }
 
+  // ========== 交易VIP日志相关 ==========
+  async tradeVipLogsList(params?: Record<string, any>) {
+    return this.get('/v1/admin/tradeVipLogs', params)
+  }
+
+  async tradeVipLogsStats(params?: Record<string, any>) {
+    return this.get('/v1/admin/tradeVipLogs', { operation: 'stats', ...params })
+  }
+
+  async tradeVipLogsSystemStats(params?: Record<string, any>) {
+    return this.get('/v1/admin/tradeVipLogs', { operation: 'system_stats', ...params })
+  }
+
   private getHeaders(): Record<string, string> {
     const token = this.getToken()
     const headers: Record<string, string> = {

@@ -21,6 +21,7 @@ interface UserInfo {
   firebase_uid?: string
   usertype?: number
   invite_reward?: number
+  can_publish_strategy?: number
 }
 
 interface MultiAuthContextType {

@@ -32,6 +32,11 @@ export default function MobileHeader() {
     setShowRegisterModal(true)
   }, [])
 
+  // 关闭邀请码弹窗的回调
+  const handleInviteCodeClose = useCallback(() => {
+    setShowInviteCodeModal(false)
+  }, [])
+
   return (
     <>
       <header className="lg:hidden fixed top-0 left-0 right-0 z-[45] bg-background-secondary/95 backdrop-blur-md border-b border-gray-800">
@@ -57,7 +62,7 @@ export default function MobileHeader() {
 
           {/* 右侧操作区域 */}
           <div className="flex items-center space-x-3">
-            <ThemeToggle />
+            {/*<ThemeToggle />*/}
             
             {/* 未登录：显示用户图标，点击显示登录/注册选项 */}
             {isClient && !isAuthenticated ? (
@@ -96,15 +101,8 @@ export default function MobileHeader() {
                           e.stopPropagation()
                           setShowAuthMenu(false)
                           
-                          // 检查邀请码
-                          const inviteUid = getInviteCookie()
-                          if (!inviteUid) {
-                            // 没有邀请码，显示邀请码输入弹窗
-                            setShowInviteCodeModal(true)
-                          } else {
-                            // 有邀请码，直接显示注册弹窗
-                            setShowRegisterModal(true)
-                          }
+                          // 直接显示邀请码输入弹窗
+                          setShowInviteCodeModal(true)
                         }}
                         className="w-full px-4 py-2.5 text-left text-sm text-text-primary hover:bg-primary/10 transition-colors border-t border-gray-700"
                       >
@@ -150,7 +148,7 @@ export default function MobileHeader() {
       {/* 邀请码输入弹窗 */}
       <InviteCodeModal
         isOpen={showInviteCodeModal}
-        onClose={() => {}} // 不允许直接关闭
+        onClose={handleInviteCodeClose}
         onSuccess={handleInviteCodeSuccess}
       />
     </>

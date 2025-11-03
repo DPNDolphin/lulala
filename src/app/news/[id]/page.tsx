@@ -14,6 +14,7 @@ interface NewsArticle {
   content: string
   category: string
   image: string
+  video_url?: string
   author: string
   read_time: number
   views: number
@@ -206,13 +207,29 @@ export default function NewsDetailPage() {
           )}
         </header>
 
+        {/* 文章视频 */}
+        {article.video_url && (
+          <div className="mb-8">
+            <div className="aspect-video">
+              <iframe
+                src={article.video_url}
+                className="w-full h-full rounded-lg border border-gray-700"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={`${article.title} - 视频`}
+              ></iframe>
+            </div>
+          </div>
+        )}
+
         {/* 文章图片 */}
-        {article.image && (
+        {!article.video_url && article.image && (
           <div className="mb-8">
             <img
               src={article.image}
               alt={article.title}
-              className="w-full h-64 md:h-96 object-cover rounded-lg"
+              className="w-full h-auto object-contain rounded-lg"
             />
           </div>
         )}

@@ -89,6 +89,8 @@ export default function AdminSettings() {
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  const [moreHelpText, setMoreHelpText] = useState<string>('')
+  const [faqText, setFaqText] = useState<string>('')
 
   // 加载配置
   const loadConfig = async () => {
@@ -125,6 +127,8 @@ export default function AdminSettings() {
           vipInviteVip: data.vip_invite_vip_ratio || '30',
           normalInviteVip: data.normal_invite_vip_ratio || '20'
         })
+        setMoreHelpText(data.more_help_text || '')
+        setFaqText(data.faq_text || '')
       }
     } catch (error) {
       console.error('加载配置失败:', error)
@@ -176,6 +180,8 @@ export default function AdminSettings() {
       formData.append('ambassador_invite_vip_ratio', inviteRatioConfig.ambassadorInviteVip)
       formData.append('vip_invite_vip_ratio', inviteRatioConfig.vipInviteVip)
       formData.append('normal_invite_vip_ratio', inviteRatioConfig.normalInviteVip)
+      formData.append('more_help_text', moreHelpText)
+      formData.append('faq_text', faqText)
       
       const response = await fetch('/v1/admin/saveConfig', {
         method: 'POST',
@@ -331,6 +337,20 @@ export default function AdminSettings() {
             >
               <span className="text-lg mr-2">🎯</span>
               邀请比例设置
+            </a>
+            <a
+              href="#more-help-config"
+              className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
+            >
+              <span className="text-lg mr-2">📘</span>
+              更多帮助
+            </a>
+            <a
+              href="#faq-config"
+              className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+            >
+              <span className="text-lg mr-2">❓</span>
+              常见问题
             </a>
           </div>
         </div>
@@ -912,6 +932,134 @@ export default function AdminSettings() {
                   </div>
                 </div>
 
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 更多帮助 */}
+        <div id="more-help-config" className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">更多帮助</h3>
+            <p className="text-sm text-gray-600 mt-1">配置在前台页面中展示的“更多帮助”文本</p>
+          </div>
+          <div className="p-6">
+            {loadingConfig ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-600">加载配置中...</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    更多帮助文本（可选）
+                  </label>
+                  <textarea
+                    value={moreHelpText}
+                    onChange={(e) => setMoreHelpText(e.target.value)}
+                    placeholder={"示例：\n如需更多帮助，请添加管理员微信..."}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                  <p className="text-xs text-gray-500">留空则不显示该文本块</p>
+                </div>
+
+                {/* 消息提示 */}
+                {message && (
+                  <div className={`p-4 rounded-lg ${
+                    message.type === 'success' 
+                      ? 'bg-green-50 text-green-800 border border-green-200' 
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}>
+                    {message.text}
+                  </div>
+                )}
+
+                {/* 保存按钮 */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={saveConfig}
+                    disabled={saving}
+                    className="flex items-center px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                        保存中...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        保存配置
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 常见问题 */}
+        <div id="faq-config" className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">常见问题</h3>
+            <p className="text-sm text-gray-600 mt-1">配置在前台页面中展示的“常见问题”文本</p>
+          </div>
+          <div className="p-6">
+            {loadingConfig ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-600">加载配置中...</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    常见问题文本（可选）
+                  </label>
+                  <textarea
+                    value={faqText}
+                    onChange={(e) => setFaqText(e.target.value)}
+                    placeholder={"示例：\nQ1：如何绑定账号？\nA1：..."}
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  />
+                  <p className="text-xs text-gray-500">留空则不显示该文本块</p>
+                </div>
+
+                {/* 消息提示 */}
+                {message && (
+                  <div className={`p-4 rounded-lg ${
+                    message.type === 'success' 
+                      ? 'bg-green-50 text-green-800 border border-green-200' 
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}>
+                    {message.text}
+                  </div>
+                )}
+
+                {/* 保存按钮 */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={saveConfig}
+                    disabled={saving}
+                    className="flex items-center px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                        保存中...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        保存配置
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>

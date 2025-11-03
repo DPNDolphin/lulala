@@ -55,6 +55,13 @@ export const wagmiConfig = createConfig({
     [base.id]: http(),
     [sepolia.id]: http(),
   },
+  // 添加错误处理配置
+  batch: {
+    multicall: {
+      batchSize: 1024,
+      wait: 16,
+    },
+  },
 })
 
 // 导出类型

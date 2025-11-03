@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import ImageUploader from '@/components/ImageUploader'
 import { adminAPI } from '@/lib/adminAPI'
@@ -39,6 +39,7 @@ export default function AdminAirdropCreatePage() {
     tags: [] as string[],
     description: '',
     content: '',
+    video_url: '',
     status: 'published',
     is_vip: 0
   })
@@ -96,6 +97,42 @@ export default function AdminAirdropCreatePage() {
     setFormData(prev => ({ ...prev, content: value || '' }))
   }
 
+  // 在光标位置插入图片
+  const insertImageAtCursor = (imageUrl: string, altText: string = '粘贴的图片') => {
+    const imageMarkdown = `![${altText}](${imageUrl})`
+    let textarea: HTMLTextAreaElement | null = null
+    let start = 0
+    let end = 0
+    textarea = document.querySelector('.w-md-editor-text-input') as HTMLTextAreaElement
+    if (!textarea) textarea = document.querySelector('.w-md-editor .w-md-editor-text-input') as HTMLTextAreaElement
+    if (!textarea) textarea = document.querySelector('.w-md-editor textarea') as HTMLTextAreaElement
+    if (!textarea) {
+      textarea = document.activeElement as HTMLTextAreaElement
+      if (!textarea || textarea.tagName !== 'TEXTAREA') textarea = null
+    }
+    const currentContent = formData.content
+    if (textarea && textarea.selectionStart !== undefined && textarea.selectionEnd !== undefined) {
+      start = textarea.selectionStart
+      end = textarea.selectionEnd
+      const beforeCursor = currentContent.substring(0, start)
+      const afterCursor = currentContent.substring(end)
+      const needsNewlineBefore = beforeCursor.length > 0 && !beforeCursor.endsWith('\n')
+      const needsNewlineAfter = afterCursor.length > 0 && !afterCursor.startsWith('\n')
+      const newContent = beforeCursor + (needsNewlineBefore ? '\n' : '') + imageMarkdown + (needsNewlineAfter ? '\n' : '') + afterCursor
+      handleContentChange(newContent)
+      setTimeout(() => {
+        const newCursorPos = start + (needsNewlineBefore ? 1 : 0) + imageMarkdown.length + (needsNewlineAfter ? 1 : 0)
+        if (textarea) {
+          textarea.setSelectionRange(newCursorPos, newCursorPos)
+          textarea.focus()
+        }
+      }, 100)
+    } else {
+      const newContent = currentContent + '\n' + imageMarkdown
+      handleContentChange(newContent)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -142,36 +179,8 @@ export default function AdminAirdropCreatePage() {
     }
   }
 
-  // 添加全局粘贴事件监听
-  useEffect(() => {
-    const handleGlobalPaste = async (e: ClipboardEvent) => {
-      if (previewMode) return
-      
-      const items = Array.from(e.clipboardData?.items || [])
-      const imageItems = items.filter(item => item.type.startsWith('image/'))
-      
-      if (imageItems.length > 0) {
-        e.preventDefault()
-        const file = imageItems[0].getAsFile()
-        if (file) {
-          try {
-            const imageUrl = await handleEditorImageUpload(file)
-            const imageMarkdown = `![粘贴的图片](${imageUrl})`
-            const currentContent = formData.content
-            const newContent = currentContent + '\n' + imageMarkdown
-            setTimeout(() => {
-              handleContentChange(newContent)
-            }, 100)
-          } catch (error) {
-            setError(error instanceof Error ? error.message : '图片上传失败')
-          }
-        }
-      }
-    }
-    
-    document.addEventListener('paste', handleGlobalPaste)
-    return () => document.removeEventListener('paste', handleGlobalPaste)
-  }, [formData.content, previewMode])
+  // 文件 input 引用，确保相同文件也能触发 onChange
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
     <AdminLayout>
@@ -283,6 +292,20 @@ export default function AdminAirdropCreatePage() {
                     placeholder="https://..." 
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">视频地址（选填）</label>
+                  <input 
+                    name="video_url" 
+                    type="url"
+                    value={formData.video_url} 
+                    onChange={handleInputChange} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none" 
+                    placeholder="请输入视频嵌入地址，如YouTube或Bilibili的embed链接" 
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    示例：https://www.youtube.com/embed/VIDEO_ID 或 https://player.bilibili.com/player.html?bvid=BV_ID
+                  </p>
+                </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -308,7 +331,7 @@ export default function AdminAirdropCreatePage() {
                         type="radio"
                         name="is_vip"
                         value="0"
-                        checked={formData.is_vip === 0}
+                        checked={formData.is_vip == 0}
                         onChange={(e) => setFormData(prev => ({ ...prev, is_vip: parseInt(e.target.value) }))}
                         className="mr-2"
                       />
@@ -319,7 +342,7 @@ export default function AdminAirdropCreatePage() {
                         type="radio"
                         name="is_vip"
                         value="1"
-                        checked={formData.is_vip === 1}
+                        checked={formData.is_vip == 1}
                         onChange={(e) => setFormData(prev => ({ ...prev, is_vip: parseInt(e.target.value) }))}
                         className="mr-2"
                       />
@@ -425,31 +448,28 @@ export default function AdminAirdropCreatePage() {
                     <input
                       type="file"
                       accept="image/*"
+                      ref={fileInputRef}
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
-                        if (file) {
-                          try {
-                            const imageUrl = await handleEditorImageUpload(file)
-                            const imageMarkdown = `![${file.name}](${imageUrl})`
-                            const currentContent = formData.content
-                            const newContent = currentContent + '\n' + imageMarkdown
-                            // 使用setTimeout确保状态更新
-                            setTimeout(() => {
-                              handleContentChange(newContent)
-                            }, 100)
-                            // 清空input
-                            e.target.value = ''
-                          } catch (error) {
-                            setError(error instanceof Error ? error.message : '图片上传失败')
-                          }
+                        if (!file) return
+                        try {
+                          const imageUrl = await handleEditorImageUpload(file)
+                          insertImageAtCursor(imageUrl, file.name)
+                        } catch (error) {
+                          setError(error instanceof Error ? error.message : '图片上传失败')
+                        } finally {
+                          e.currentTarget.value = ''
                         }
                       }}
                       className="hidden"
-                      id="airdrop-editor-image-upload"
+                      id="airdrop-editor-image-upload-create"
                     />
                     <label
-                      htmlFor="airdrop-editor-image-upload"
+                      htmlFor="airdrop-editor-image-upload-create"
                       className="inline-flex items-center px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded cursor-pointer transition-colors"
+                      onClick={() => {
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                     >
                       插入图片
                     </label>
@@ -471,12 +491,7 @@ export default function AdminAirdropCreatePage() {
                           const file = imageFiles[0]
                           try {
                             const imageUrl = await handleEditorImageUpload(file)
-                            const imageMarkdown = `![${file.name}](${imageUrl})`
-                            const currentContent = formData.content
-                            const newContent = currentContent + '\n' + imageMarkdown
-                            setTimeout(() => {
-                              handleContentChange(newContent)
-                            }, 100)
+                            insertImageAtCursor(imageUrl, file.name)
                           } catch (error) {
                             setError(error instanceof Error ? error.message : '图片上传失败')
                           }
@@ -491,12 +506,7 @@ export default function AdminAirdropCreatePage() {
                           if (file) {
                             try {
                               const imageUrl = await handleEditorImageUpload(file)
-                              const imageMarkdown = `![粘贴的图片](${imageUrl})`
-                              const currentContent = formData.content
-                              const newContent = currentContent + '\n' + imageMarkdown
-                              setTimeout(() => {
-                                handleContentChange(newContent)
-                              }, 100)
+                              insertImageAtCursor(imageUrl, '粘贴的图片')
                             } catch (error) {
                               setError(error instanceof Error ? error.message : '图片上传失败')
                             }
@@ -545,7 +555,7 @@ export default function AdminAirdropCreatePage() {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <h3 className="text-xl font-bold text-gray-900">{formData.name || '未填写项目名称'}</h3>
-                    {formData.is_vip === 1 && (
+                    {formData.is_vip == 1 && (
                       <span className="px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-semibold rounded-full">
                         VIP
                       </span>

@@ -193,7 +193,7 @@ export default function AlphaPage() {
               }`}
             >
               <BarChart3 className="h-4 w-4" />
-              <span>稳定度看板</span>
+              <span>度看板</span>
             </button>
           </div>
 
@@ -228,7 +228,14 @@ export default function AlphaPage() {
                   ) : airdropToday.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                       {airdropToday.map((airdrop) => (
-                        <AirdropCard key={airdrop.id} airdrop={airdrop} isToday={true} />
+                        <AirdropCard
+                          key={airdrop.id}
+                          airdrop={{
+                            ...airdrop,
+                            name: airdrop.name && airdrop.name.trim() ? airdrop.name : 'Token名未揭晓',
+                          }}
+                          isToday={true}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -241,11 +248,13 @@ export default function AlphaPage() {
 
                 {/* 空投预告 */}
                 <div>
-                  <div className="flex items-center space-x-3 mb-6">
-                    <Clock className="h-6 w-6 text-purple-400" />
-                    <h2 className="text-2xl font-bold text-white">空投预告</h2>
-                    <div className="bg-purple-400/20 text-purple-400 px-3 py-1 rounded-full text-sm font-medium">
-                      {airdropPreview.length} 个
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-6 w-6 text-purple-400" />
+                      <h2 className="text-2xl font-bold text-white">空投预告</h2>
+                      <div className="bg-purple-400/20 text-purple-400 px-3 py-1 rounded-full text-sm font-medium">
+                        {airdropPreview.length} 个
+                      </div>
                     </div>
                   </div>
                   
@@ -262,7 +271,14 @@ export default function AlphaPage() {
                   ) : airdropPreview.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                       {airdropPreview.map((airdrop) => (
-                        <AirdropCard key={airdrop.id} airdrop={airdrop} isToday={false} />
+                        <AirdropCard
+                          key={airdrop.id}
+                          airdrop={{
+                            ...airdrop,
+                            name: airdrop.name && airdrop.name.trim() ? airdrop.name : 'Token名未揭晓',
+                          }}
+                          isToday={false}
+                        />
                       ))}
                     </div>
                   ) : (

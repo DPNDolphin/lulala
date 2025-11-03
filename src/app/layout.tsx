@@ -41,6 +41,25 @@ export default function RootLayout({
                   document.documentElement.classList.add('dark-theme');
                 }
               })();
+              
+              // 全局错误处理：忽略 chainId 相关的只读属性错误
+              window.addEventListener('error', function(event) {
+                if (event.error && event.error.message && 
+                    event.error.message.includes('Cannot set property chainId')) {
+                  console.warn('忽略 chainId 只读属性错误:', event.error.message);
+                  event.preventDefault();
+                  return false;
+                }
+              });
+              
+              // 处理未捕获的 Promise 错误
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && event.reason.message && 
+                    event.reason.message.includes('Cannot set property chainId')) {
+                  console.warn('忽略 chainId 只读属性 Promise 错误:', event.reason.message);
+                  event.preventDefault();
+                }
+              });
             `,
           }}
         />

@@ -355,6 +355,14 @@ export default function RumorsPage() {
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent">
                 小道消息
               </h1>
+              <a
+                href="/r"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-4 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors underline hover:no-underline"
+              >
+                全网交易所下载/注册
+              </a>
             </div>
             <p className="text-sm text-text-secondary">
               人人可发 · 人人可证 · 三人带证据=建议结论

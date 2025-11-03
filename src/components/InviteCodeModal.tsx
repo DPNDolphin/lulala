@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Gift, Loader2, Check } from 'lucide-react'
 import { publicAPI } from '@/lib/publicAPI'
-import { setInviteCookie } from '@/lib/inviteUtils'
+import { setInviteCookie, getInviteCookie } from '@/lib/inviteUtils'
 
 interface InviteCodeModalProps {
   isOpen: boolean
@@ -22,6 +22,16 @@ export default function InviteCodeModal({ isOpen, onClose, onSuccess }: InviteCo
     setMounted(true)
     return () => setMounted(false)
   }, [])
+
+  // 当弹窗打开时，自动填充邀请码
+  useEffect(() => {
+    if (isOpen) {
+      const inviteUid = getInviteCookie()
+      if (inviteUid) {
+        setInviteCode(inviteUid)
+      }
+    }
+  }, [isOpen])
 
   // 清除消息
   const clearMessage = () => setMessage(null)
@@ -92,6 +102,13 @@ export default function InviteCodeModal({ isOpen, onClose, onSuccess }: InviteCo
               输入邀请码
             </h3>
           </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            title="关闭"
+          >
+            <X className="w-5 h-5 text-text-muted hover:text-text-primary" />
+          </button>
         </div>
 
         <div className="p-6">

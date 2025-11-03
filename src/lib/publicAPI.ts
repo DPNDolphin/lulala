@@ -13,7 +13,8 @@ class PublicAPI {
   }
 
   async get<T = any>(url: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
-    let fullUrl = url
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE
+    let fullUrl = apiBase ? (url.startsWith('http') ? url : `${apiBase}${url}`) : url
     
     // 处理查询参数
     if (params) {
@@ -66,11 +67,13 @@ class PublicAPI {
       console.log('📄 使用 JSON 格式，Body 长度:', body.length)
     }
 
-    console.log('📤 发送请求到:', url)
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE
+    const fullUrl = apiBase ? (url.startsWith('http') ? url : `${apiBase}${url}`) : url
+    console.log('📤 发送请求到:', fullUrl)
     console.log('📋 请求头:', headers)
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers,
         body,
@@ -106,6 +109,7 @@ export interface NewsArticle {
   excerpt: string
   category: string
   image: string
+  video_url?: string
   author: string
   read_time: string
   views: number
@@ -119,6 +123,7 @@ export interface NewbieArticle {
   excerpt: string
   category: string
   image: string
+  video_url?: string
   author: string
   read_time: string
   views: number
@@ -242,6 +247,8 @@ export interface UnionInfoPerson {
   avatar?: string
   viplevel?: number
   vip_vailddate?: string
+  tradelevel?: number
+  trade_vailddate?: string
 }
 
 export interface UnionInfoResponse {
@@ -331,6 +338,15 @@ export class UserDataAPI extends PublicAPI {
   async getUnionInfo(page: number = 1, limit: number = 20): Promise<ApiResponse<UnionInfoResponse>> {
     return this.get('/v1/users/unionInfo', { page, limit })
   }
+
+  // 给邀请用户设置交易VIP
+  async grantTradeVip(targetUserId: number, tradeDays: number = 365): Promise<ApiResponse<any>> {
+    return this.post('/v1/users/unionInfo', {
+      operation: 'grant_trade_vip',
+      target_userid: targetUserId,
+      trade_days: tradeDays
+    })
+  }
 }
 
 // 导出用户数据API实例
@@ -345,12 +361,20 @@ export interface UserProfile {
 export interface UserProfileData {
   id: number
   wallet_address: string
+  email?: string
   nickname: string
   avatar: string
   vip_level?: number
   vip_vailddate?: number | string
+  trade_level?: number
+  trade_vailddate?: number | string
   balance?: number
   point?: number
+  usertype?: number
+  invite_reward?: number
+  likes_count?: number
+  comments_count?: number
+  project_participation_count?: number
 }
 
 // 用户资料API类
@@ -380,3 +404,44 @@ export class UserProfileAPI extends PublicAPI {
 
 // 导出用户资料API实例
 export const userProfileAPI = new UserProfileAPI()
+
+// 积分日志相关接口类型
+export interface PointLog {
+  id: number
+  user_id: number
+  point_change: number
+  point_before: number
+  point_after: number
+  action_type: string
+  action_name: string
+  related_id: number | null
+  related_type: string
+  description: string
+  created_at: string
+}
+
+export interface PointLogResponse {
+  logs: PointLog[]
+  current_point: number
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
+}
+
+// 积分日志API类
+export class PointLogAPI extends PublicAPI {
+  // 获取积分日志列表
+  async getPointLogs(page: number = 1, limit: number = 20, action_type?: string): Promise<ApiResponse<PointLogResponse>> {
+    const params: any = { page, limit }
+    if (action_type) {
+      params.action_type = action_type
+    }
+    return this.get('/v1/users/pointLog', params)
+  }
+}
+
+// 导出积分日志API实例
+export const pointLogAPI = new PointLogAPI()
